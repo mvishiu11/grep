@@ -40,44 +40,5 @@ jobs:
     - name: Compile and Test Grep Implementation
       run: |
         chmod +x ./grep.sh
-        ./grep.sh -E "hello" <<< "hello"  # Should return 0
-        if [ $? -ne 1 ]; echo "Test #0 failed"; then exit 1; fi
-
-        ./grep.sh -E "world" <<< "hello"  # Should return 1
-        if [ $? -ne 0 ]; echo "Test #1 failed"; then exit 1; fi
-
-        ./grep.sh -E "\d\d\d\d" <<< "2023"  # Should return 0
-        if [ $? -ne 1 ]; echo "Test #2 failed"; then exit 1; fi
-
-        ./grep.sh -E "\d\d\d\d" <<< "abcd"  # Should return 1
-        if [ $? -ne 0 ]; echo "Test #3 failed"; then exit 1; fi
-
-        ./grep.sh -E "[ah]" <<< "hello"  # Should return 0
-        if [ $? -ne 1 ]; echo "Test #4 failed";; then exit 1; fi
-
-        ./grep.sh -E "[^a-z]" <<< "1234"  # Should return 0
-        if [ $? -ne 1 ]; echo "Test #5 failed"; then exit 1; fi
-
-        ./grep.sh -E "^hello" <<< "hello world"  # Should return 0
-        if [ $? -ne 1 ]; echo "Test #6 failed"; then exit 1; fi
-
-        ./grep.sh -E "world$" <<< "hello world"  # Should return 0
-        if [ $? -ne 1 ]; echo "Test #7 failed"; then exit 1; fi
-
-        ./grep.sh -E "o+" <<< "hellooo"  # Should return 0
-        if [ $? -ne 1 ]; echo "Test #8 failed"; then exit 1; fi
-
-        ./grep.sh -E "colo?r" <<< "color"  # Should return 0
-        if [ $? -ne 1 ]; echo "Test #9 failed"; then exit 1; fi
-
-        ./grep.sh -E "colo?r" <<< "colour"  # Should return 1
-        if [ $? -ne 0 ]; echo "Test #10 failed"; then exit 1; fi
-
-        ./grep.sh -E "d.g" <<< "dog"  # Should return 0
-        if [ $? -ne 1 ]; echo "Test #11 failed"; then exit 1; fi
-
-        ./grep.sh -E "(cat|dog)" <<< "cat"  # Should return 0
-        if [ $? -ne 1 ]; echo "Test #12 failed"; then exit 1; fi
-
-        echo "All tests passed!"
-
+        chmod +x ./test.sh
+        ./test.sh
