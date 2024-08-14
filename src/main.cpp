@@ -40,7 +40,9 @@ int main(int argc, char* argv[]) {
         std::cout << "Matched String: " << matched_string << std::endl;
         std::cout << "Execution time: " << duration << " microseconds" << std::endl;
 
-        return result ? 0 : 1;
+        int return_val = result ? 0 : 1;
+        std::cout << "Return value: " << return_val << std::endl;
+        return return_val;
     } catch (const std::runtime_error& e) {
         std::cerr << e.what() << std::endl;
         return 1;
