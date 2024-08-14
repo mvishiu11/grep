@@ -207,7 +207,14 @@ The `(-|-)` pattern allows you to match one pattern or another, increasing the p
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit issues, feature requests, and pull requests.
+Contributions are welcome! Please feel free to submit issues, feature requests, and pull requests. A simple CI workflow was implemented for ease of contribution. It runs the provided test script containing sanity checks of previous functionalities. So, before pushing any changes, run:
+
+```
+cd grep
+./test.sh
+```
+
+And make sure all tests passsed. Thank you in advance!
 
 ---
 
