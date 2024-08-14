@@ -1,0 +1,69 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up CMake
+      uses: lukka/get-cmake@v3
+
+    - name: Install dependencies
+      run: sudo apt-get install -y cmake g++
+
+    - name: Compile and Test Grep Implementation
+      run: |
+        chmod +x ./grep.sh
+        ./grep.sh -E "hello" <<< "hello"  # Should return 0
+        if [ $? -ne 0 ]; then exit 1; fi
+
+        ./grep.sh -E "world" <<< "hello"  # Should return 1
+        if [ $? -ne 1 ]; then exit 1; fi
+
+        ./grep.sh -E "\d\d\d\d" <<< "2023"  # Should return 0
+        if [ $? -ne 0 ]; then exit 1; fi
+
+        ./grep.sh -E "\d\d\d\d" <<< "abcd"  # Should return 1
+        if [ $? -ne 1 ]; then exit 1; fi
+
+        ./grep.sh -E "[a-z]" <<< "hello"  # Should return 0
+        if [ $? -ne 0 ]; then exit 1; fi
+
+        ./grep.sh -E "[^a-z]" <<< "1234"  # Should return 1
+        if [ $? -ne 1 ]; then exit 1; fi
+
+        ./grep.sh -E "^hello" <<< "hello world"  # Should return 0
+        if [ $? -ne 0 ]; then exit 1; fi
+
+        ./grep.sh -E "world$" <<< "hello world"  # Should return 0
+        if [ $? -ne 0 ]; then exit 1; fi
+
+        ./grep.sh -E "o+" <<< "hellooo"  # Should return 0
+        if [ $? -ne 0 ]; then exit 1; fi
+
+        ./grep.sh -E "colo?r" <<< "color"  # Should return 0
+        if [ $? -ne 0 ]; then exit 1; fi
+
+        ./grep.sh -E "colo?r" <<< "colour"  # Should return 0
+        if [ $? -ne 0 ]; then exit 1; fi
+
+        ./grep.sh -E "d.g" <<< "dog"  # Should return 0
+        if [ $? -ne 0 ]; then exit 1; fi
+
+        ./grep.sh -E "cat|dog" <<< "cat"  # Should return 0
+        if [ $? -ne 0 ]; then exit 1; fi
+
+        ./grep.sh -E "(cat) and \1" <<< "cat and cat"  # Should return 0
+        if [ $? -ne 0 ]; then exit 1; fi
+
+        echo "All tests passed!"
+
