@@ -1,9 +1,11 @@
+#include "Grep/Matcher.hpp"
+#include "Grep/Utils.hpp"
 #include <iostream>
-#include <string>
-#include <chrono>
-#include <vector>
-#include <thread>
+#include <stdexcept>
 
+/**
+ * @brief Matches a pattern at a specific position within the input string.
+ */
 std::pair<std::string, bool> match_pattern_at_position(const std::string& input_line, const std::string& pattern, size_t input_pos) {
     size_t pattern_pos = 0;
     std::string matched_string = "";
@@ -96,50 +98,13 @@ std::pair<std::string, bool> match_pattern_at_position(const std::string& input_
 
     std::cout << "[END MATCHING] Matched String: " << matched_string << std::endl;
 
-    // Wait for a second to simulate a long running process
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-
     return std::pair<std::string, bool>(matched_string, pattern_pos == pattern.length());
 }
 
-size_t calculate_logical_pattern_length(const std::string& pattern) {
-    size_t logical_length = 0;
-    size_t i = 0;
 
-    while (i < pattern.length()) {
-        if (pattern[i] == '\\' && i + 1 < pattern.length()) {
-            // Handle escape sequences like \d or \w
-            if(pattern[i + 1] == '1')
-            {
-                i += 2;
-                continue;
-            }
-            logical_length++;
-            i += 2;
-        } else if (pattern[i] == '[') {
-            // Handle character classes like [abc] or [^abc]
-            size_t end_bracket_pos = pattern.find(']', i);
-            if (end_bracket_pos == std::string::npos) {
-                throw std::runtime_error("Invalid pattern: unmatched '['");
-            }
-            logical_length++;
-            i = end_bracket_pos + 1;
-        } else if (pattern[i] == '+' || pattern[i] == '?' || pattern[i] == '.' || pattern[i] == '|' || pattern[i] == '(' || pattern[i] == ')') {
-            // The '+','?', '.'  and '|' quantifiers do not increase logical length
-            if (logical_length == 0) {
-                throw std::runtime_error("Invalid pattern: quantifier '" + std::string(1, pattern[i]) + "' cannot be at the start or after another quantifier.");
-            }
-            i++;
-        } else {
-            // Handle literal characters
-            logical_length++;
-            i++;
-        }
-    }
-
-    return logical_length;
-}
-
+/**
+ * @brief Matches a pattern against an input line. Adds support for line anchors.
+ */
 std::pair<std::string, bool> match_pattern(const std::string& input_line, const std::string& pattern) {
     std::cout << "Checking for pattern: " << pattern << std::endl;
 
@@ -181,79 +146,6 @@ std::pair<std::string, bool> match_pattern(const std::string& input_line, const 
     return std::pair<std::string, bool>("", false);
 }
 
-std::vector<std::string> generate_patterns_with_optional(const std::string& pattern) {
-    std::vector<std::string> patterns;
-    patterns.push_back("");  // Start with an empty base pattern
-
-    for (size_t i = 0; i < pattern.length(); ++i) {
-        if (i + 1 < pattern.length() && pattern[i + 1] == '?') {
-            std::vector<std::string> new_patterns;
-            for (const auto& base : patterns) {
-                // Generate both versions: with and without the optional character
-                new_patterns.push_back(base + pattern[i]);     // Include the optional character
-                new_patterns.push_back(base);                  // Exclude the optional character
-            }
-            patterns = new_patterns;
-            i++; // Skip the '?' character
-        } else {
-            for (auto& base : patterns) {
-                base += pattern[i];
-            }
-        }
-    }
-
-    return patterns;
-}
-
-std::vector<std::string> split_pattern_by_wildcard(const std::string& pattern) {
-    std::vector<std::string> subpatterns;
-    std::string current_subpattern;
-
-    for (char c : pattern) {
-        if (c == '.') {
-            if (!current_subpattern.empty()) {
-                subpatterns.push_back(current_subpattern);
-                current_subpattern.clear();
-            }
-            subpatterns.push_back(".");  // Add the wildcard itself as a subpattern
-        } else {
-            current_subpattern += c;
-        }
-    }
-
-    if (!current_subpattern.empty()) {
-        subpatterns.push_back(current_subpattern);
-    }
-
-    return subpatterns;
-}
-
-std::vector<std::string> split_pattern_by_pipe(const std::string& pattern) {
-    std::vector<std::string> subpatterns;
-    std::string current_subpattern;
-
-    for (char c : pattern) {
-        if (c == '|') {
-            if (!current_subpattern.empty()) {
-                subpatterns.push_back(current_subpattern);
-                current_subpattern.clear();
-            }
-        }
-        else if (c == '(' or c == ')') {
-            continue;
-        } else {
-            current_subpattern += c;
-        }
-    }
-
-    // Add the last subpattern if any
-    if (!current_subpattern.empty()) {
-        subpatterns.push_back(current_subpattern);
-    }
-
-    return subpatterns;
-}
-
 std::pair<std::string, bool> match_pattern_with_wildcards(const std::string& input_line, const std::string& pattern) {
     std::vector<std::string> subpatterns = split_pattern_by_wildcard(pattern);
     size_t current_pos = 0;
@@ -281,6 +173,9 @@ std::pair<std::string, bool> match_pattern_with_wildcards(const std::string& inp
     return std::pair<std::string, bool>(matched_string, true);
 }
 
+/**
+ * @brief Matches a pattern considering all pattern-internal cases (wildcards, options, etc.). Pattern-internal means it does not include backreferences and references.
+ */
 std::pair<std::string, bool> match_pattern_all_cases(const std::string& input_line, const std::string& pattern) {
     bool result = false;
     std::string matched_string = "";
@@ -308,6 +203,9 @@ std::pair<std::string, bool> match_pattern_all_cases(const std::string& input_li
     return std::pair<std::string, bool>(matched_string, result);
 }
 
+/**
+ * @brief Matches a pattern with alternation (pattern1|pattern2).
+ */
 std::pair<std::string, bool> match_pattern_with_alternatives(const std::string& input_line, const std::string& pattern) {
     std::vector<std::string> subpatterns = split_pattern_by_pipe(pattern);
 
@@ -321,32 +219,9 @@ std::pair<std::string, bool> match_pattern_with_alternatives(const std::string& 
     return std::pair<std::string, bool>("", false);
 }
 
-std::pair<std::string, size_t> check_for_capture_group_pattern(const std::string& pattern) {
-    int initial_pos = 0;
-    if (pattern.find('|') == std::string::npos) {
-        initial_pos = pattern.find('(');
-    }
-    else {
-        initial_pos = pattern.substr(1).find('(') + 1;
-        if (initial_pos == std::string::npos) {
-              throw std::runtime_error("Invalid pattern: backref unmatched by a capture group");
-        }
-    }
-    if (initial_pos + 1 < pattern.length()) {
-        size_t end_pos = pattern.find(')', initial_pos + 1);
-        if (end_pos == std::string::npos) {
-            throw std::runtime_error("Invalid pattern: unmatched '('");
-        }
-
-        std::string capture_group = pattern.substr(initial_pos + 1, end_pos - initial_pos - 1);
-        std::cout << "Capture Group: " << capture_group << std::endl;
-        std::pair<std::string, int> capture_group_pattern = std::pair<std::string, int>(capture_group, initial_pos);
-        return capture_group_pattern;
-    }
-
-    return std::pair<std::string, int>("", -1);
-}
-
+/**
+ * @brief Matches a pattern against an input line with backreference support.
+ */
 std::pair<std::string, bool> match_pattern_with_backref(const std::string& input_line, const std::string& pattern) {
     if(pattern.find("\\1") == std::string::npos) {
         std::cout << "No backref found\n";
@@ -358,6 +233,7 @@ std::pair<std::string, bool> match_pattern_with_backref(const std::string& input
         throw std::runtime_error("Invalid pattern: backref unmatched by a capture group");
     }
     std::string capture_group = capture_group_pattern.first;
+    std::cout << "Capture Group: \"" << capture_group << "\"" << std::endl;
     size_t capture_group_pos = capture_group_pattern.second;
     size_t backref_pos = pattern.find("\\1");
 
@@ -379,48 +255,4 @@ std::pair<std::string, bool> match_pattern_with_backref(const std::string& input
         return std::pair<std::string, bool>(match_result.first, false);
     }
     return std::pair<std::string, bool>(capture_group_match_string + match_result.first + backref_match.first, true);
-}
-
-int main(int argc, char* argv[]) {
-    // Flush after every std::cout / std::cerr
-    std::cout << std::unitbuf;
-    std::cerr << std::unitbuf;
-
-    // Start timing
-    auto start_time = std::chrono::high_resolution_clock::now();
-
-    if (argc != 3) {
-        std::cerr << "Expected two arguments" << std::endl;
-        return 1;
-    }
-
-    std::string flag = argv[1];
-    std::string pattern = argv[2];
-
-    if (flag != "-E") {
-        std::cerr << "Expected first argument to be '-E'" << std::endl;
-        return 1;
-    }
-
-    std::string input_line;
-    std::getline(std::cin, input_line);
-    
-    try {
-        auto res = match_pattern_with_backref(input_line, pattern);
-        bool result = res.second;
-        std::string matched_string = res.first;
-        
-        // Stop timing
-        auto end_time = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
-        
-        std::cout << "Result: " << (result ? "true" : "false") << std::endl;
-        std::cout << "Matched String: " << matched_string << std::endl;
-        std::cout << "Execution time: " << duration << " microseconds" << std::endl;
-
-        return result ? 0 : 1;
-    } catch (const std::runtime_error& e) {
-        std::cerr << e.what() << std::endl;
-        return 1;
-    }
 }
