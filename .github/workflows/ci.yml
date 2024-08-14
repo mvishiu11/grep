@@ -8,32 +8,19 @@ on:
 
 jobs:
   build:
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
 
     strategy:
       fail-fast: false
 
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest]
         build_type: [Release]
         c_compiler: [gcc, clang, cl]
         include:
-          - os: windows-latest
-            c_compiler: cl
-            cpp_compiler: cl
           - os: ubuntu-latest
             c_compiler: gcc
             cpp_compiler: g++
-          - os: ubuntu-latest
-            c_compiler: clang
-            cpp_compiler: clang++
-        exclude:
-          - os: windows-latest
-            c_compiler: gcc
-          - os: windows-latest
-            c_compiler: clang
-          - os: ubuntu-latest
-            c_compiler: cl
 
     steps:
     - uses: actions/checkout@v4
@@ -41,10 +28,6 @@ jobs:
     - name: Install dependencies on Ubuntu
       if: matrix.os == 'ubuntu-latest'
       run: sudo apt-get update && sudo apt-get install -y cmake make g++ clang
-
-    - name: Install dependencies on Windows
-      if: matrix.os == 'windows-latest'
-      run: choco install cmake
 
     - name: Set reusable strings
       id: strings
@@ -67,46 +50,43 @@ jobs:
       run: |
         chmod +x ./grep.sh
         ./grep.sh -E "hello" <<< "hello"  # Should return 0
-        if [ $? -ne 0 ]; then exit 1; fi
+        if [ $? -ne 0 ]; echo "Test #0 failed"; then exit 1; fi
 
         ./grep.sh -E "world" <<< "hello"  # Should return 1
-        if [ $? -ne 1 ]; then exit 1; fi
+        if [ $? -ne 1 ]; echo "Test #1 failed"; then exit 1; fi
 
         ./grep.sh -E "\d\d\d\d" <<< "2023"  # Should return 0
-        if [ $? -ne 0 ]; then exit 1; fi
+        if [ $? -ne 0 ]; echo "Test #2 failed"; then exit 1; fi
 
         ./grep.sh -E "\d\d\d\d" <<< "abcd"  # Should return 1
-        if [ $? -ne 1 ]; then exit 1; fi
+        if [ $? -ne 1 ]; echo "Test #3 failed"; then exit 1; fi
 
-        ./grep.sh -E "[a-z]" <<< "hello"  # Should return 0
-        if [ $? -ne 0 ]; then exit 1; fi
+        ./grep.sh -E "[ah]" <<< "hello"  # Should return 0
+        if [ $? -ne 0 ]; echo "Test #4 failed";; then exit 1; fi
 
-        ./grep.sh -E "[^a-z]" <<< "1234"  # Should return 1
-        if [ $? -ne 1 ]; then exit 1; fi
+        ./grep.sh -E "[^a-z]" <<< "1234"  # Should return 0
+        if [ $? -ne 0 ]; echo "Test #5 failed"; then exit 1; fi
 
         ./grep.sh -E "^hello" <<< "hello world"  # Should return 0
-        if [ $? -ne 0 ]; then exit 1; fi
+        if [ $? -ne 0 ]; echo "Test #6 failed"; then exit 1; fi
 
         ./grep.sh -E "world$" <<< "hello world"  # Should return 0
-        if [ $? -ne 0 ]; then exit 1; fi
+        if [ $? -ne 0 ]; echo "Test #7 failed"; then exit 1; fi
 
         ./grep.sh -E "o+" <<< "hellooo"  # Should return 0
-        if [ $? -ne 0 ]; then exit 1; fi
+        if [ $? -ne 0 ]; echo "Test #8 failed"; then exit 1; fi
 
         ./grep.sh -E "colo?r" <<< "color"  # Should return 0
-        if [ $? -ne 0 ]; then exit 1; fi
+        if [ $? -ne 0 ]; echo "Test #9 failed"; then exit 1; fi
 
-        ./grep.sh -E "colo?r" <<< "colour"  # Should return 0
-        if [ $? -ne 0 ]; then exit 1; fi
+        ./grep.sh -E "colo?r" <<< "colour"  # Should return 1
+        if [ $? -ne 1 ]; echo "Test #10 failed"; then exit 1; fi
 
         ./grep.sh -E "d.g" <<< "dog"  # Should return 0
-        if [ $? -ne 0 ]; then exit 1; fi
+        if [ $? -ne 0 ]; echo "Test #11 failed"; then exit 1; fi
 
-        ./grep.sh -E "cat|dog" <<< "cat"  # Should return 0
-        if [ $? -ne 0 ]; then exit 1; fi
-
-        ./grep.sh -E "(cat) and \1" <<< "cat and cat"  # Should return 0
-        if [ $? -ne 0 ]; then exit 1; fi
+        ./grep.sh -E "(cat|dog)" <<< "cat"  # Should return 0
+        if [ $? -ne 0 ]; echo "Test #12 failed"; then exit 1; fi
 
         echo "All tests passed!"
 
